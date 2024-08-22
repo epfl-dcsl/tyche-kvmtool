@@ -143,6 +143,8 @@ void *mmap_hugetlbfs(struct kvm *kvm, const char *htlbfs_path, u64 size)
 /* This function wraps the decision between hugetlbfs map (if requested) or normal mmap */
 void *mmap_anon_or_hugetlbfs(struct kvm *kvm, const char *hugetlbfs_path, u64 size)
 {
+    static int contalloc = 0;
+
 	if (hugetlbfs_path)
 		/*
 		 * We don't /need/ to map guest RAM from hugetlbfs, but we do so
@@ -151,6 +153,20 @@ void *mmap_anon_or_hugetlbfs(struct kvm *kvm, const char *hugetlbfs_path, u64 si
 		return mmap_hugetlbfs(kvm, hugetlbfs_path, size);
 	else {
 		kvm->ram_pagesize = getpagesize();
-		return mmap(NULL, size, PROT_RW, MAP_ANON_NORESERVE, -1, 0);
+
+        // Open contalloc on the first call
+        if (contalloc <= 0) {
+            contalloc = open("/dev/contalloc", O_RDWR);
+            if (contalloc < 0) {
+                printf("Error: Could not open contalloc\n");
+            }
+        }
+
+        // If contalloc was successfully opened, use it for mmap
+        if (contalloc > 0) {
+		    return mmap(NULL, size, PROT_RW, MAP_SHARED | MAP_POPULATE, contalloc, 0);
+        }
+        // Else use a standard anonymous mmap
+        return mmap(NULL, size, PROT_RW, MAP_ANON_NORESERVE, -1, 0);
 	}
 }

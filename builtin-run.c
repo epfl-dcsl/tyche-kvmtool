@@ -284,11 +284,28 @@ static int loglevel_parser(const struct option *opt, const char *arg, int unset)
 static void *kvm_cpu_thread(void *arg)
 {
 	char name[16];
+    cpu_set_t cpuset;
+    char *pin_env;
 
 	current_kvm_cpu = arg;
 
 	sprintf(name, "kvm-vcpu-%lu", current_kvm_cpu->cpu_id);
 	kvm__set_thread_name(name);
+
+    // Set the CPU affinity
+    pin_env = getenv("KVM_PIN_CORES");
+    if (pin_env != NULL) {
+        unsigned long core = strtoul(pin_env, NULL, 10);
+        core += current_kvm_cpu->cpu_id;
+
+        CPU_ZERO(&cpuset);
+        CPU_SET(core, &cpuset);
+        if (pthread_setaffinity_np(current_kvm_cpu->thread, sizeof(cpuset), &cpuset) != 0) {
+            perror("Failled to set thread affinity with pthread_setaffinity_np\n");
+        } else {
+            printf("Pinned vCPU %ld to CPU %lu\n", current_kvm_cpu->cpu_id, core);
+        }
+    }
 
 	if (kvm_cpu__start(current_kvm_cpu))
 		goto panic_kvm;
