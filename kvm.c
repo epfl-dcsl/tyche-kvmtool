@@ -5,6 +5,7 @@
 #include "kvm/mutex.h"
 #include "kvm/kvm-cpu.h"
 #include "kvm/kvm-ipc.h"
+#include "common_kvm.h"
 
 #include <linux/kernel.h>
 #include <linux/kvm.h>
@@ -326,6 +327,11 @@ int kvm__register_mem(struct kvm *kvm, u64 guest_phys, u64 size,
 			.userspace_addr		= (unsigned long)userspace_addr,
 		};
 
+		if (getenv("CONFIDENTIAL_VM")) {
+			mem.flags |= KVM_FLAGS_ENCODING_PRESENT | (CONFIDENTIALIZABLE << KVM_FLAGS_SEGMENT_TYPE_IDX);
+			mem.flags |= ((MEM_READ | MEM_EXEC | MEM_WRITE | MEM_SUPER | MEM_ACTIVE)
+					<< KVM_FLAGS_MEM_ACCESS_RIGHTS_IDX);
+		}
 		ret = ioctl(kvm->vm_fd, KVM_SET_USER_MEMORY_REGION, &mem);
 		if (ret < 0) {
 			ret = -errno;
