@@ -44,4 +44,13 @@ typedef enum segment_type_t {
   CONFIDENTIALIZABLE = 5,
 } segment_type_t;
 
+typedef enum tyche_perm_value_t {
+  TYCHE_PERM_SPAWN = (1ULL << 0),
+  TYCHE_PERM_SEND = (1ULL << 1),
+  TYCHE_PERM_DUPLICATE = (1ULL << 2),
+  TYCHE_PERM_ALIAS = (1ULL << 3),
+  TYCHE_PERM_CARVE = (1ULL << 4),
+  TYCHE_PERM_CPUID = (1ULL << 5),
+} tyche_perm_value_t;
+
 #endif /*__COMMON_KVM_H__*/

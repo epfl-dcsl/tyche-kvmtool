@@ -472,7 +472,16 @@ int kvm__init(struct kvm *kvm)
 		goto err_sys_fd;
 	}
 
-	kvm->vm_fd = ioctl(kvm->sys_fd, KVM_CREATE_VM, kvm__get_vm_type(kvm));
+	uint64_t permissions = TYCHE_PERM_SPAWN | TYCHE_PERM_SEND |
+			TYCHE_PERM_DUPLICATE | TYCHE_PERM_CARVE | TYCHE_PERM_ALIAS;
+
+	char* pin_env = getenv("KVM_PIN_CORES");
+	uint64_t core_map_start = (pin_env != NULL)? strtoul(pin_env, NULL, 10) : 0;
+	uint64_t core_map = ((1ULL << (kvm->cfg.nrcpus)) -1) << core_map_start;
+	uint64_t perm_type = (permissions << 32) | core_map;
+
+	printf("The permission we are trying to set 0x%lx, cores: %lx, nrcpus: %d\n", perm_type, core_map, kvm->cfg.nrcpus);
+	kvm->vm_fd = ioctl(kvm->sys_fd, KVM_CREATE_VM, perm_type | kvm__get_vm_type(kvm));
 	if (kvm->vm_fd < 0) {
 		pr_err("KVM_CREATE_VM ioctl");
 		ret = kvm->vm_fd;
