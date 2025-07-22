@@ -301,7 +301,7 @@ static void *kvm_cpu_thread(void *arg)
         CPU_ZERO(&cpuset);
         CPU_SET(core, &cpuset);
         if (pthread_setaffinity_np(current_kvm_cpu->thread, sizeof(cpuset), &cpuset) != 0) {
-            perror("Failled to set thread affinity with pthread_setaffinity_np\n");
+            perror("Failed to set thread affinity with pthread_setaffinity_np\n");
         } else {
             printf("Pinned vCPU %ld to CPU %lu\n", current_kvm_cpu->cpu_id, core);
         }
